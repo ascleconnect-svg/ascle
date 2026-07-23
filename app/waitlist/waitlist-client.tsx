@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useWaitlist } from "@clerk/nextjs";
 
 const DISPLAY_FONT = "font-heading";
@@ -45,11 +46,7 @@ function WaitlistForm({
 
     const { error } = await waitlist.join({ emailAddress: email.trim() });
     if (error) {
-      setLocalError(
-        error.errors?.[0]?.longMessage ??
-          error.errors?.[0]?.message ??
-          "Something went wrong. Please try again."
-      );
+      setLocalError(error.longMessage ?? error.message);
       console.error("Failed to join waitlist:", error);
       return;
     }
@@ -257,16 +254,8 @@ export default function WaitlistClient() {
             : "border-[#3DD68C]/8 bg-[#0A0F0C]/85"
         }`}
       >
-        <div className="flex items-center gap-2.5" aria-label="Ascle home">
-          <div
-            aria-hidden="true"
-            className={`${DISPLAY_FONT} flex h-9 w-9 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#1a6b3f] to-[#2a9d5c] text-[13px] font-semibold tracking-wide text-[#FAFAF8]`}
-          >
-            Asc
-          </div>
-          <span className={`${DISPLAY_FONT} text-[22px] font-normal tracking-wide text-[#FAFAF8]`}>
-            Ascle
-          </span>
+        <div className="flex items-center" aria-label="Ascle home">
+          <Image src="/logo.png" alt="Ascle" width={375} height={161} priority className="h-8 w-auto" />
         </div>
         <div className="hidden rounded-full border border-[#3DD68C]/30 px-3 py-1 text-[10px] font-semibold tracking-[2px] text-[#3DD68C] uppercase sm:block">
           Launching 2026
@@ -512,9 +501,9 @@ export default function WaitlistClient() {
         role="contentinfo"
         className="flex flex-wrap items-center justify-between gap-5 border-t border-white/6 px-6 py-10 sm:px-20"
       >
-        <div className={`${DISPLAY_FONT} text-xl font-normal tracking-wide text-[#FAFAF8]`}>
-          Ascle
-          <span className={`${BODY_FONT} mt-0.5 block text-xs font-normal tracking-wide text-[#5a6b5e]`}>
+        <div>
+          <Image src="/logo.png" alt="Ascle" width={375} height={161} className="h-6 w-auto" />
+          <span className={`${BODY_FONT} mt-1.5 block text-xs font-normal tracking-wide text-[#5a6b5e]`}>
             by Glitzhealth Technologies Ltd.
           </span>
         </div>
