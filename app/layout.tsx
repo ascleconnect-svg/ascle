@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Cormorant_Garamond, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -35,7 +36,9 @@ export default function RootLayout({
       lang="en"
       className={`${outfit.variable} ${cormorantGaramond.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ClerkProvider waitlistUrl="/waitlist">{children}</ClerkProvider>
+      </body>
     </html>
   );
 }

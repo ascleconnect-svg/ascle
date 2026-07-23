@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useWaitlist } from "@clerk/nextjs";
 
 const DISPLAY_FONT = "font-heading";
 const BODY_FONT = "font-sans";
@@ -8,12 +9,6 @@ const BODY_FONT = "font-sans";
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
 }
-
-type Feedback = {
-  type: "success" | "error";
-  title: string;
-  detail: string;
-} | null;
 
 function WaitlistForm({
   formId,
@@ -26,43 +21,39 @@ function WaitlistForm({
   buttonLabel: string;
   note: React.ReactNode;
 }) {
+  const { waitlist, errors, fetchStatus } = useWaitlist();
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const loading = fetchStatus === "fetching";
+  const joined = Boolean(waitlist.id);
+  const errorMessage =
+    localError ?? errors?.fields?.emailAddress?.longMessage ?? null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLocalError(null);
 
     if (!email.trim()) {
-      setFeedback({
-        type: "error",
-        title: "Email required.",
-        detail: "Please enter your email address to join the waitlist.",
-      });
+      setLocalError("Please enter your email address to join the waitlist.");
       return;
     }
     if (!isValidEmail(email)) {
-      setFeedback({
-        type: "error",
-        title: "Invalid email.",
-        detail: "Please enter a valid email address (e.g. name@example.com).",
-      });
+      setLocalError("Please enter a valid email address (e.g. name@example.com).");
       return;
     }
 
-    setLoading(true);
-    setFeedback(null);
-
-    await new Promise((resolve) => setTimeout(resolve, 700));
-
-    setFeedback({
-      type: "success",
-      title: "You're on the waitlist.",
-      detail:
-        "Founding access confirmed. We will reach you directly before we go live — August to October 2026.",
-    });
+    const { error } = await waitlist.join({ emailAddress: email.trim() });
+    if (error) {
+      setLocalError(
+        error.errors?.[0]?.longMessage ??
+          error.errors?.[0]?.message ??
+          "Something went wrong. Please try again."
+      );
+      console.error("Failed to join waitlist:", error);
+      return;
+    }
     setEmail("");
-    setLoading(false);
   }
 
   return (
@@ -83,18 +74,19 @@ function WaitlistForm({
           type="email"
           autoComplete="email"
           required
+          disabled={joined}
           placeholder={placeholder}
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
-            if (feedback?.type === "error") setFeedback(null);
+            if (localError) setLocalError(null);
           }}
           aria-describedby={`${formId}-feedback`}
-          className="min-w-0 flex-1 rounded-xl border border-[#3DD68C]/20 bg-white/4 px-4.5 py-4 text-[15px] font-normal text-[#FAFAF8] outline-none placeholder:text-[#5a6b5e] sm:rounded-none sm:border-none sm:bg-transparent"
+          className="min-w-0 flex-1 rounded-xl border border-[#3DD68C]/20 bg-white/4 px-4.5 py-4 text-[15px] font-normal text-[#FAFAF8] outline-none placeholder:text-[#5a6b5e] disabled:opacity-60 sm:rounded-none sm:border-none sm:bg-transparent"
         />
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || joined}
           aria-label={buttonLabel}
           className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#3DD68C] px-7 py-4 text-sm font-bold tracking-wide whitespace-nowrap text-[#0A0F0C] transition-[background,transform] duration-150 hover:bg-[#5ee8a4] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:rounded-none"
         >
@@ -113,24 +105,28 @@ function WaitlistForm({
         {note}
       </p>
 
-      {feedback && (
+      {(joined || errorMessage) && (
         <div
           id={`${formId}-feedback`}
           role="alert"
           aria-live="polite"
           className={`mt-4 flex animate-[fade-up_0.4s_ease_both] items-start gap-2.5 rounded-lg border px-4.5 py-3.5 text-sm font-medium ${
-            feedback.type === "success"
+            joined
               ? "border-[#3DD68C]/30 bg-[#3DD68C]/10 text-[#3DD68C]"
               : "border-[#c0392b]/30 bg-[#c0392b]/10 text-[#e8766a]"
           }`}
         >
           <span className="mt-px shrink-0 text-base" aria-hidden="true">
-            {feedback.type === "success" ? "✓" : "⚠"}
+            {joined ? "✓" : "⚠"}
           </span>
           <div className="text-left leading-normal">
-            <strong className="mb-0.5 block">{feedback.title}</strong>
+            <strong className="mb-0.5 block">
+              {joined ? "You're on the waitlist." : "Something went wrong."}
+            </strong>
             <span className="text-xs font-normal opacity-80">
-              {feedback.detail}
+              {joined
+                ? "Founding access confirmed. We will reach you directly before we go live — August to October 2026."
+                : errorMessage}
             </span>
           </div>
         </div>
